@@ -1,11 +1,9 @@
 package main
 
-import (
-	"fmt"
-	"nomad-go/something"
-)
+import "fmt"
 
 func main() {
-	fmt.Println("Hello world!")
-	something.SayHello()
+	name := "nico"
+	name = "lynn"
+	fmt.Println(name)
 }

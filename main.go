@@ -1,19 +1,11 @@
 package main
 
-import "fmt"
-
-type person struct {
-	name	string
-	age		int
-	favFood []string
-}
+import (
+	"fmt"
+	"nomad-go/accounts"
+)
 
 func main() {
-	favFood := []string{"pizza", "burgers"}
-	nico := person{
-		name: "nico",
-		age:  18,
-		favFood: favFood,
-	}
-	fmt.Println(nico.name, nico.age, nico.favFood)
+	account := accounts.NewAccount("nico")
+	fmt.Println(account)
 }

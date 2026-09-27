@@ -23,10 +23,14 @@ var baseUrl = "https://www.saramin.co.kr/zf_user/search/recruit?searchword=pytho
 
 func main() {
 	var jobs []extractedJob
+	c := make(chan []extractedJob)
 	totalPages := getPages()
 	
 	for i := 0; i < totalPages; i++ {
-		extractedJobs := getPage(i)
+		go getPage(i, c)
+	}
+	for i := 0; i < totalPages; i++ {
+		extractedJobs := <-c
 		jobs = append(jobs, extractedJobs...)
 	}
 
@@ -44,13 +48,22 @@ func writeJobs(jobs []extractedJob) {
 	wErr := w.Write(headers)
 	checkErr(wErr)
 
+	var jobSlices [][]string
+	c := make(chan []string)
 	for _, job := range jobs {
-		jobSlice := []string{"https://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=" + job.id, job.title, job.location, job.salary}
-		jwErr := w.Write(jobSlice)
-		checkErr(jwErr)
+		go createJobSlice(job, c)
 	}
+	for i := 0; i < len(jobs); i++ {
+		jobSlice := <-c
+		jobSlices = append(jobSlices, jobSlice)
+	}
+	jwErr := w.WriteAll(jobSlices)
+	checkErr(jwErr)
 }
-func getPage(page int) []extractedJob{
+func createJobSlice(job extractedJob, c chan<- []string) {
+	c <- []string{"https://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=" + job.id, job.title, job.location, job.salary}
+}
+func getPage(page int, mainC chan<- []extractedJob) {
 	var jobs []extractedJob
 	c := make(chan extractedJob)
 	pageUrl := baseUrl + "&recruitPage=" + strconv.Itoa(page + 1)
@@ -73,7 +86,7 @@ func getPage(page int) []extractedJob{
 		job := <- c
 		jobs = append(jobs, job)
 	}
-	return jobs
+	mainC <- jobs
 }
 func extractJob(card *goquery.Selection, c chan<- extractedJob) {
 	id, _ := card.Attr("value")
